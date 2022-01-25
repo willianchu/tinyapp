@@ -18,7 +18,9 @@ app.get("/urls/new", (req, res) => { // GET form doesn't have a body
 });
 
 app.post("/urls", (req, res) => {
-  console.log(req.body);  // Log the POST request body to the console
+  const uniqueKey = generateRandomString(6, urlDatabase);
+  console.log(uniqueKey, req.body);  // Log the POST request body to the console
+  urlDatabase[uniqueKey] = req.body.longURL; // add the new URL to the database
   res.send("Ok");         // Respond with 'Ok' (we will replace this)
 });
 
