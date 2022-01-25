@@ -1,17 +1,27 @@
 const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
+const bodyParser = require("body-parser"); // pull information from HTML POST (express4) - must be installed npm install body-parser
 
-app.set("view engine", "ejs"); // set ejs as the view engine
+app.use(bodyParser.urlencoded({extended: true})); // set parse application/x-www-form-urlencoded - this must become before all off our routes (req.body.longURL)
+
+app.set("view engine", "ejs"); // set ejs as the view engine - must be installed npm install ejs
 
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
 };
 
-app.get("/urls/new", (req, res) => {
+app.get("/urls/new", (req, res) => { // GET form doesn't have a body
   res.render("urls_new");
 });
+
+app.post("/urls", (req, res) => {
+  console.log(req.body);  // Log the POST request body to the console
+  res.send("Ok");         // Respond with 'Ok' (we will replace this)
+});
+
+
 
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase };
