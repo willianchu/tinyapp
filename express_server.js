@@ -1,4 +1,5 @@
 const generateRandomString = require("./random"); // @willianchu random.js
+const { object2disk, disk2object } = require("./object2disk"); // @willianchu object2disk.js
 const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
@@ -8,10 +9,7 @@ app.use(bodyParser.urlencoded({extended: true})); // set parse application/x-www
 
 app.set("view engine", "ejs"); // set ejs as the view engine - must be installed npm install ejs
 
-const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
-};
+const urlDatabase = disk2object("urlDatabase.json"); // retrieve the object from disk  and convert it to a javascript object
 
 app.get("/urls/new", (req, res) => { // GET form doesn't have a body
   res.render("urls_new");
@@ -21,6 +19,7 @@ app.post("/urls", (req, res) => {
   const uniqueKey = generateRandomString(6, urlDatabase);
   console.log(uniqueKey, req.body);  // Log the POST request body to the console
   urlDatabase[uniqueKey] = req.body.longURL; // add the new URL to the database
+  object2disk(urlDatabase, "urlDatabase.json"); // save the database to disk
   res.send("Ok");         // Respond with 'Ok' (we will replace this)
 });
 
