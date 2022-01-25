@@ -9,14 +9,9 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
-app.get("/hello", (req, res) => {
-  const templateVars = { greeting: 'Hello World!' };
-  res.render("hello_world", templateVars);
+app.get("/urls/new", (req, res) => {
+  res.render("urls_new");
 });
-
-// app.get("/urls.json", (req, res) => { // json path
-//   res.json(urlDatabase);
-// });
 
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase };
@@ -29,10 +24,18 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
-// app.get("/hello", (req, res) => {
-//   res.send("<html><body>Hello <b>World</b></body></html>\n");
-// });
-
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
+
+
+// app.get("/hello", (req, res) => {
+//   const templateVars = { greeting: 'Hello World!' };
+//   res.render("hello_world", templateVars);
+// });
+// app.get("/hello", (req, res) => {
+//   res.send("<html><body>Hello <b>World</b></body></html>\n");
+// });
+  // app.get("/urls.json", (req, res) => { // json path
+  //   res.json(urlDatabase);
+  // });
