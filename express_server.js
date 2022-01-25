@@ -24,7 +24,14 @@ app.post("/urls", (req, res) => {
   res.send("Ok");         // Respond with 'Ok' (we will replace this)
 });
 
-
+app.get("/u/:shortURL", (req, res) => {
+  // const longURL = ...
+  console.log(req.params);
+  const longURL = urlDatabase[req.params.shortURL]; // requesting the longURL from the database using the shortURL in the params of the request
+  
+  console.log(longURL);
+  res.redirect(longURL);
+});
 
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase };
@@ -35,6 +42,12 @@ app.get("/urls/:shortURL", (req, res) => {
   console.log(urlDatabase[req.params.shortURL]);
   const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
   res.render("urls_show", templateVars);
+});
+
+app.get('*', (req, res) => {
+  res.status(404);
+  res.render("urls_404");
+  res.end();
 });
 
 app.listen(PORT, () => {
@@ -49,6 +62,6 @@ app.listen(PORT, () => {
 // app.get("/hello", (req, res) => {
 //   res.send("<html><body>Hello <b>World</b></body></html>\n");
 // });
-  // app.get("/urls.json", (req, res) => { // json path
-  //   res.json(urlDatabase);
-  // });
+// app.get("/urls.json", (req, res) => { // json path
+//   res.json(urlDatabase);
+// });
