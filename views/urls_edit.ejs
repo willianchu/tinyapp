@@ -18,21 +18,14 @@
       </div>
     <div class="card-footer text-muted"></div>
   </div>
-  <style type="text/css">
-    .custom-centered{
-     margin:auto;
-     width:100%;
-    }
-  </style>
-  
   <div class="card text-center">  
-        <h3>Edit TinyURL</h3>
-           <form role="form" class="card text-center" action="/urls" method="POST"> 
-               <label for="longURL">Enter a URL:</label>
-               <input class="form-control" type="text" name="longURL" placeholder="http://" style="width: 300px; margin: auto">
-               <button style="width: 100px; margin: auto" type="submit" class="btn btn-primary">Submit</button>
-           </form>
-</div>      
+    <h3>Edit TinyURL</h3>
+        <form role="form" class="card text-center" action="/urls/edit/<%= shortURL %>" method="POST"> 
+            <label for="longURL">Edit an URL:</label>
+            <input class="form-control" type="text" name="longURL" value="<%= longURL %>" placeholder="http://" style="width: 300px; margin: auto">
+            <button style="width: 100px; margin: auto" type="submit" class="btn btn-primary">Submit</button>
+        </form>
+  </div>      
 
      
   <footer>
