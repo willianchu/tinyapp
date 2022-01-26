@@ -4,18 +4,52 @@ const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
 const bodyParser = require("body-parser"); // pull information from HTML POST (express4) - must be installed npm install body-parser
+const cookieParser = require('cookie-parser'); // pull information from HTML POST depends on npm install body-parser (combo of body-parser and cookie-parser) API
+
 
 app.use(bodyParser.urlencoded({extended: true})); // set parse application/x-www-form-urlencoded - this must become before all off our routes (req.body.longURL)
 
 app.set("view engine", "ejs"); // set ejs as the view engine - must be installed npm install ejs
 
+app.use(cookieParser()); // set cookieParser as the view engine
+
 const urlDatabase = disk2object("urlDatabase.json"); // retrieve the object from disk  and convert it to a javascript object
+
+/* cookie example
+app.get('/', function (req, res) {
+  // Cookies that have not been signed
+  console.log('Cookies: ', req.cookies)
+
+  // Cookies that have been signed
+  console.log('Signed Cookies: ', req.signedCookies)
+})
+*/
+// ##### Login/ Cookie route #####
+app.post("/login", (req, res) => {
+  const loggedUserName = req.body.userName;
+  // parse body of request
+  console.log("set a cookie", req.body);
+  res.cookie(loggedUserName); // set cookie
+  // const user = req.body.username;
+  // const password = req.body.password;
+  // const userDatabase = disk2object("users.json");
+  // const userFound = userDatabase[user];
+  // if (userFound && userFound.password === password) {
+  //   res.cookie("username", user, {maxAge: 3600000});
+  const templateVars = { "loggedUserName": loggedUserName, urls: urlDatabase };
+  res.render("urls_index", templateVars);
+  // } else {
+  //   res.status(403).send("<h1>403 Forbidden</h1>"); // create a 403 Forbidden in 404 page
+  // }
+});
+
+
 
 // ##### Browse - Beginning of the URL #####
 // #########################################
 app.get("/urls", (req, res) => {
   console.log("### load index page ###");
-  const templateVars = { urls: urlDatabase };
+  const templateVars = { loggedUserName: req.cookies["username"], urls: urlDatabase };
   res.render("urls_index", templateVars);
 });
 
@@ -63,7 +97,7 @@ app.get("/u/:shortURL", (req, res) => {
 app.get("/urls/:shortURL", (req, res) => {
   console.log("### Shows Specific URL ####");
   console.log(urlDatabase[req.params.shortURL]);
-  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  const templateVars = { loggedUserName: req.cookies["username"], shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
   res.render("urls_show", templateVars);
 });
 
@@ -73,7 +107,7 @@ app.get("/urls/edit/:shortURL", (req, res) => {
   const index = req.params.shortURL;
   console.log("### Shows EDIT URL ####");
   console.log(index, urlDatabase[req.params.shortURL]);
-  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  const templateVars = { loggedUserName: req.cookies["username"], shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
   res.render("urls_edit", templateVars);
 });
 
@@ -82,6 +116,17 @@ app.post("/urls/edit/:shortURL", (req, res) => {
   console.log(req.params.shortURL, req.body, req.body.shortURL);
   urlDatabase[req.params.shortURL] = req.body.longURL;
   res.redirect("/urls");
+});
+
+
+// ##### Logout #####
+// #################
+app.post("/logout", (req, res) => {
+  console.log("### Logout req ####");
+  console.log(req.body);
+  const toDelete = req.cookies["username"];
+  res.clearCookie("username");
+  // res.redirect("/urls");
 });
 
 
