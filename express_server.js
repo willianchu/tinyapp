@@ -15,34 +15,71 @@ app.get("/urls/new", (req, res) => { // GET form doesn't have a body
   res.render("urls_new");
 });
 
+
+// ##### Browse - Beginning of the URL #####
+// #########################################
+app.get("/urls", (req, res) => {
+  const templateVars = { urls: urlDatabase };
+  res.render("urls_index", templateVars);
+});
+
+// ##### Write/ Create #####
+// #########################
 app.post("/urls", (req, res) => {
   const uniqueKey = generateRandomString(6, urlDatabase);
   console.log(uniqueKey, req.body);  // Log the POST request body to the console
   urlDatabase[uniqueKey] = req.body.longURL; // add the new URL to the database
   object2disk(urlDatabase, "urlDatabase.json"); // save the database to disk
-  res.send("Ok");         // Respond with 'Ok' (we will replace this)
+  res.redirect("/urls");  // Redirect to the index page
 });
 
+// ##### Erase/ Delete #####
+// #########################
+app.post("/urls/*/delete", (req, res) => {
+  console.log(req.body);  // Log the POST request body to the console
+  delete urlDatabase[req.params[0]]; // delete the URL from the database
+  object2disk(urlDatabase, "urlDatabase.json"); // save the database to disk
+  res.redirect("/urls");
+});
+
+
+// ##### Go to the long URL #####
+// ##############################
 app.get("/u/:shortURL", (req, res) => {
   // const longURL = ...
   console.log(req.params);
   const longURL = urlDatabase[req.params.shortURL]; // requesting the longURL from the database using the shortURL in the params of the request
   
   console.log(longURL);
-  res.redirect(longURL);
+  res.redirect(longURL); // go outside 
 });
 
-app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase };
-  res.render("urls_index", templateVars);
-});
 
+// ##### specific URL #####
+// #########################
 app.get("/urls/:shortURL", (req, res) => {
   console.log(urlDatabase[req.params.shortURL]);
   const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
-  res.render("urls_show", templateVars);
+  res.render("urls_edit", templateVars);
 });
 
+// ##### Update/ Edit #####
+// #########################
+app.get("/urls/edit/:idx", (req, res) => {
+  const index = req.params.idx;
+  const templateVars = { shortURL: index, longURL: urlDatabase[index] };
+  res.render("urls_edit", templateVars);
+});
+
+app.post("/urls/edit/:shortURL", (req, res) => {
+  console.log(urlDatabase[req.params.shortURL]);
+  urlDatabase[req.params.shortURL] = req.body.longURL;
+  res.redirect("/urls");
+});
+
+
+// ##### page 404 #####
+// ###################
 app.get('*', (req, res) => {
   res.status(404);
   res.render("urls_404");
