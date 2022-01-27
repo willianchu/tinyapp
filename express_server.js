@@ -22,8 +22,11 @@ const usersDatabase = disk2object("usersDatabase.json"); // retrieve the object 
 // ##### Login/ Cookie route #####
 app.get("/login", (req, res) => {
   console.log("render login page"); // >>>>>>>>>>>>> GET login page
-  res.render("login");
+  const validId = req.cookies["user_id"] ? req.cookies["user_id"] : false;
+  const templateVars = { "user_id": validId };
+  res.render("login", templateVars);
 });
+
 
 app.post("/login", (req, res) => { // <<<<<<<<<<<<<<< POST login
   console.log("login post", req.body);
@@ -34,6 +37,7 @@ app.post("/login", (req, res) => { // <<<<<<<<<<<<<<< POST login
     if (usersDatabase[user].email === loggedUserEmail && usersDatabase[user].password === loggedUserPassword) { // if the email and password match
       res.cookie("user_id", usersDatabase[user].id); // set cookie
       res.redirect("/urls"); // redirect to the urls page
+      res.end();
     }
   }
   res.status(403).send("<h1>email/ password don't mach!</h1>"); // if the email and password don't match
@@ -43,9 +47,7 @@ app.post("/login", (req, res) => { // <<<<<<<<<<<<<<< POST login
 // ##### Logout #####
 app.post("/logout", (req, res) => { // <<<<<<<<<<<<<<< POST logout erase cook
   console.log("### Logout Post ####");
-  console.log(req.body);
-  const toDelete = req.cookies["user_id"];
-  res.clearCookie(toDelete);
+  res.clearCookie("user_id");
   res.redirect("/urls");
 });
 
@@ -54,7 +56,9 @@ app.post("/logout", (req, res) => { // <<<<<<<<<<<<<<< POST logout erase cook
 // ##### Browse - Beginning of the URL - main page #####
 app.get("/urls", (req, res) => {
   console.log("### load index page ###");
-  const templateVars = { loggedUserName: req.cookies["user_id"], urls: urlDatabase };
+  console.log("req.cookies", req.cookies);
+  const validId = req.cookies["user_id"] ? req.cookies["user_id"] : false;
+  const templateVars = { "user_id": validId, urls: urlDatabase };
   res.render("urls_index", templateVars);
 });
 
@@ -62,8 +66,11 @@ app.get("/urls", (req, res) => {
 // ##### Register #####
 app.get("/register", (req, res) => { //>>>>>>>> GET register page
   console.log("### register ###");
-  res.render("register");
+  const validId = req.cookies["user_id"] ? req.cookies["user_id"] : false;
+  const templateVars = { "user_id": validId };
+  res.render("register", templateVars);
 });
+
 
 app.post("/register", (req, res) => { // <<<<<<<<<<<< POST form has a body
   const newEmail = req.body.email;
@@ -82,8 +89,8 @@ app.post("/register", (req, res) => { // <<<<<<<<<<<< POST form has a body
   const newUserId = generateRandomString(6);
   console.log("Register valid");
   console.log(newUserId, newEmail, newPassword);
-  usersDatabase[newUserId] = { id: newUserId, email: newEmail, password: newPassword };
-  //object2disk("usersDatabase.json", usersDatabase);
+  usersDatabase[newUserId] = { "id": newUserId, "email": newEmail, "password": newPassword };
+  object2disk(usersDatabase, "usersDatabase.json");
   console.log("user",usersDatabase);
   res.redirect("/urls");
 });
@@ -92,7 +99,9 @@ app.post("/register", (req, res) => { // <<<<<<<<<<<< POST form has a body
 // ##### Write/ Create #####
 app.get("/urls/new", (req, res) => { // >>>>>>>>>> GET page
   console.log("### load urls_new ###");
-  res.render("urls_new");
+  const validId = req.cookies["user_id"] ? req.cookies["user_id"] : false;
+  const templateVars = { "user_id": validId };
+  res.render("urls_new", templateVars);
 }); // >>>>>>>>>> show
 
 app.post("/urls", (req, res) => { // <<<<<<<<<<<<<<<< POST form
@@ -130,7 +139,8 @@ app.get("/u/:shortURL", (req, res) => {
 app.get("/urls/:shortURL", (req, res) => {
   console.log("### Shows Specific URL ####");
   console.log(urlDatabase[req.params.shortURL]);
-  const templateVars = { loggedUserName: req.cookies["user_id"], shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  const validId = req.cookies["user_id"] ? req.cookies["user_id"] : false;
+  const templateVars = { "user_id": validId, shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
   res.render("urls_show", templateVars);
 });
 
@@ -140,7 +150,8 @@ app.get("/urls/edit/:shortURL", (req, res) => { // GET >>>>>>>>>>>>>>>>>
   const index = req.params.shortURL;
   console.log("### Shows EDIT URL ####");
   console.log(index, urlDatabase[req.params.shortURL]);
-  const templateVars = { loggedUserName: req.cookies["user_id"], shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  const validId = req.cookies["user_id"] ? req.cookies["user_id"] : false;
+  const templateVars = { "user_id": validId, shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
   res.render("urls_edit", templateVars);
 });
 
@@ -156,7 +167,9 @@ app.post("/urls/edit/:shortURL", (req, res) => { // POST <<<<<<<<<<<<<<<< Edit
 app.get('*', (req, res) => {
   console.log("### 404 page ####");
   res.status(404);
-  res.render("urls_404");
+  const validId = req.cookies["user_id"] ? req.cookies["user_id"] : false;
+  const templateVars = { "user_id": validId };
+  res.render("urls_404", templateVars);
   res.end();
 });
 
