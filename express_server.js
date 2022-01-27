@@ -23,7 +23,8 @@ const usersDatabase = disk2object("usersDatabase.json"); // retrieve the object 
 app.get("/login", (req, res) => {
   console.log("render login page"); // >>>>>>>>>>>>> GET login page
   const validId = req.cookies["user_id"] ? req.cookies["user_id"] : false;
-  const templateVars = { "user_id": validId };
+  const validEmail = req.cookies["user_id"] ? usersDatabase[validId].email : false;
+  const templateVars = { "user_id": validId, "user_email": validEmail };
   res.render("login", templateVars);
 });
 
@@ -58,7 +59,8 @@ app.get("/urls", (req, res) => {
   console.log("### load index page ###");
   console.log("req.cookies", req.cookies);
   const validId = req.cookies["user_id"] ? req.cookies["user_id"] : false;
-  const templateVars = { "user_id": validId, urls: urlDatabase };
+  const validEmail = req.cookies["user_id"] ? usersDatabase[validId].email : false;
+  const templateVars = { "user_id": validId, "user_email": validEmail, urls: urlDatabase };
   res.render("urls_index", templateVars);
 });
 
@@ -67,7 +69,8 @@ app.get("/urls", (req, res) => {
 app.get("/register", (req, res) => { //>>>>>>>> GET register page
   console.log("### register ###");
   const validId = req.cookies["user_id"] ? req.cookies["user_id"] : false;
-  const templateVars = { "user_id": validId };
+  const validEmail = req.cookies["user_id"] ? usersDatabase[validId].email : false;
+  const templateVars = { "user_id": validId, "user_email": validEmail };
   res.render("register", templateVars);
 });
 
@@ -100,7 +103,8 @@ app.post("/register", (req, res) => { // <<<<<<<<<<<< POST form has a body
 app.get("/urls/new", (req, res) => { // >>>>>>>>>> GET page
   console.log("### load urls_new ###");
   const validId = req.cookies["user_id"] ? req.cookies["user_id"] : false;
-  const templateVars = { "user_id": validId };
+  const validEmail = req.cookies["user_id"] ? usersDatabase[validId].email : false;
+  const templateVars = { "user_id": validId, "user_email": validEmail };
   res.render("urls_new", templateVars);
 }); // >>>>>>>>>> show
 
@@ -140,7 +144,8 @@ app.get("/urls/:shortURL", (req, res) => {
   console.log("### Shows Specific URL ####");
   console.log(urlDatabase[req.params.shortURL]);
   const validId = req.cookies["user_id"] ? req.cookies["user_id"] : false;
-  const templateVars = { "user_id": validId, shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  const validEmail = req.cookies["user_id"] ? usersDatabase[validId].email : false;
+  const templateVars = { "user_id": validId, "user_email": validEmail, shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
   res.render("urls_show", templateVars);
 });
 
@@ -151,7 +156,8 @@ app.get("/urls/edit/:shortURL", (req, res) => { // GET >>>>>>>>>>>>>>>>>
   console.log("### Shows EDIT URL ####");
   console.log(index, urlDatabase[req.params.shortURL]);
   const validId = req.cookies["user_id"] ? req.cookies["user_id"] : false;
-  const templateVars = { "user_id": validId, shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  const validEmail = req.cookies["user_id"] ? usersDatabase[validId].email : false;
+  const templateVars = { "user_id": validId, "user_email": validEmail, shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
   res.render("urls_edit", templateVars);
 });
 
@@ -168,7 +174,8 @@ app.get('*', (req, res) => {
   console.log("### 404 page ####");
   res.status(404);
   const validId = req.cookies["user_id"] ? req.cookies["user_id"] : false;
-  const templateVars = { "user_id": validId };
+  const validEmail = req.cookies["user_id"] ? usersDatabase[validId].email : false;
+  const templateVars = { "user_id": validId, "user_email": validEmail };
   res.render("urls_404", templateVars);
   res.end();
 });
