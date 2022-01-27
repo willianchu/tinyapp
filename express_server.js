@@ -2,7 +2,7 @@ const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
 const bodyParser = require("body-parser");
-const cookieParser = require('cookie-parser');
+const cookieSession = require('cookie-session');
 const generateRandomString = require("./random"); // @willianchu random.js
 const { object2disk, disk2object } = require("./object2disk"); // @willianchu object2disk.js
 const bcrypt = require('bcryptjs');
@@ -10,7 +10,12 @@ const bcrypt = require('bcryptjs');
 // middleware
 app.use(bodyParser.urlencoded({extended: true}));
 app.set("view engine", "ejs");
-app.use(cookieParser());
+app.set('trust proxy', 1); // trust first proxy
+app.use(cookieSession({
+  name: 'session',
+  keys: ['timhortons', 'Going there to order a double double'],
+  maxAge: 24 * 60 * 60 * 1000 // 24 hours
+}));
 
 
 // ##### URL data base disk retrieve #####
@@ -23,8 +28,9 @@ const usersDatabase = disk2object("usersDatabase.json"); // retrieve the object 
 // ##### Login/ Cookie route #####
 app.get("/login", (req, res) => {
   console.log("render login page"); // >>>>>>>>>>>>> GET login page
-  const validId = req.cookies["user_id"] ? req.cookies["user_id"] : false;
-  const validEmail = req.cookies["user_id"] ? usersDatabase[validId].email : false;
+  const validId = req.session.userID ? req.session.userID : false;
+  const validEmail = req.session.userID ? usersDatabase[validId].email : false;
+  console.log("validId", validId); // *** update
   const templateVars = { "user_id": validId, "user_email": validEmail };
   console.log("templateVars delivered", templateVars);
   res.render("login", templateVars);
@@ -43,7 +49,7 @@ app.post("/login", (req, res) => { // <<<<<<<<<<<<<<< POST login
     console.log("encryptIsTrue", encryptIsTrue);
     console.log("usersDatabase[user].email", usersDatabase[user].email);
     if (usersDatabase[user].email === loggedUserEmail && encryptIsTrue) { // if the email and password match
-      res.cookie("user_id", usersDatabase[user].id); // set cookie
+      req.session.userID = usersDatabase[user].id; // set cookie session
       res.redirect("/urls"); // redirect to the urls page
       res.end();
     }
@@ -56,7 +62,7 @@ app.post("/login", (req, res) => { // <<<<<<<<<<<<<<< POST login
 // ##### Logout #####
 app.post("/logout", (req, res) => { // <<<<<<<<<<<<<<< POST logout erase cook
   console.log("### Logout Post ####");
-  res.clearCookie("user_id");
+  req.session = null;
   res.redirect("/urls");
 });
 
@@ -65,10 +71,9 @@ app.post("/logout", (req, res) => { // <<<<<<<<<<<<<<< POST logout erase cook
 // ##### Browse - Beginning of the URL - main page #####
 app.get("/urls", (req, res) => {
   console.log("### load index page ###");
-  console.log("req.cookies", req.cookies);
-  const validId = req.cookies["user_id"] ? req.cookies["user_id"] : false;
+  const validId = req.session.userID ? req.session.userID : false;
   //look for a valid email using the cookie
-  const validEmail = req.cookies["user_id"] ? usersDatabase[validId].email : false;
+  const validEmail = req.session.userID ? usersDatabase[validId].email : false;
   console.log("validId", validId); // *** update
   if (validId === false) { // if the user is not logged in
     res.redirect("/first");
@@ -91,8 +96,9 @@ app.get("/urls", (req, res) => {
 // ##### Register #####
 app.get("/register", (req, res) => { //>>>>>>>> GET register page
   console.log("### register ###");
-  const validId = req.cookies["user_id"] ? req.cookies["user_id"] : false;
-  const validEmail = req.cookies["user_id"] ? usersDatabase[validId].email : false;
+  const validId = req.session.userID ? req.session.userID : false;
+  const validEmail = req.session.userID ? usersDatabase[validId].email : false;
+  console.log("validId", validId); // *** update
   const templateVars = { "user_id": validId, "user_email": validEmail };
   res.render("register", templateVars);
 });
@@ -119,22 +125,27 @@ app.post("/register", (req, res) => { // <<<<<<<<<<<< POST form has a body
   usersDatabase[newUserId] = { "id": newUserId, "email": newEmail, "password": encryptedPassword };
   object2disk(usersDatabase, "usersDatabase.json");
   console.log("user",usersDatabase);
-  res.redirect("/urls");
+  req.session.userID = newUserId; // set cookie session
+  res.redirect("/urls"); // redirect to the urls page
+  res.end();
 });
 
 
 // ##### Write/ Create #####
 app.get("/urls/new", (req, res) => { // >>>>>>>>>> GET page
   console.log("### load urls_new ###");
-  const validId = req.cookies["user_id"] ? req.cookies["user_id"] : false;
-  const validEmail = req.cookies["user_id"] ? usersDatabase[validId].email : false;
+  const validId = req.session.userID ? req.session.userID : false;
+  const validEmail = req.session.userID ? usersDatabase[validId].email : false;
+  console.log("validId", validId); // *** update
   const templateVars = { "user_id": validId, "user_email": validEmail };
   res.render("urls_new", templateVars);
 }); // >>>>>>>>>> show
 
 app.post("/urls", (req, res) => { // <<<<<<<<<<<<<<<< POST form
   const uniqueKey = generateRandomString(6);
-  const validId = req.cookies["user_id"];
+  const validId = req.session.userID ? req.session.userID : false;
+  const validEmail = req.session.userID ? usersDatabase[validId].email : false;
+  console.log("validId", validId); // *** update
   console.log(">>> post /urls adding a new tiny <<<");
   console.log(uniqueKey, req.body);  // Log the POST request body to the console
   urlDatabase[uniqueKey] = { longURL: req.body.longURL, userID: validId}; // add the new URL to the database
@@ -147,7 +158,9 @@ app.post("/urls", (req, res) => { // <<<<<<<<<<<<<<<< POST form
 app.post("/urls/*/delete", (req, res) => { // post <<<<<<<<<<<<<<<< delete
   console.log(">>>> post Delete <<<<<");
   console.log(req.body);  // Log the POST request body to the console
-  const validId = req.cookies["user_id"];
+  const validId = req.session.userID ? req.session.userID : false;
+  const validEmail = req.session.userID ? usersDatabase[validId].email : false;
+  console.log("validId", validId); // *** update
   if (validId === urlDatabase[req.params[0]].userID) {
     delete urlDatabase[req.params[0]]; // delete the URL from the database
     object2disk(urlDatabase, "urlDatabase.json"); // save the database to disk
@@ -178,8 +191,9 @@ app.get("/urls/:shortURL", (req, res) => {
   console.log("### Shows Specific URL ####");
   console.log("parameters",req.params.shortURL);
   if (urlDatabase[req.params.shortURL]) {
-    const validId = req.cookies["user_id"] ? req.cookies["user_id"] : false;
-    const validEmail = req.cookies["user_id"] ? usersDatabase[validId].email : false;
+    const validId = req.session.userID ? req.session.userID : false;
+    const validEmail = req.session.userID ? usersDatabase[validId].email : false;
+    console.log("validId", validId); // *** update
     const templateVars = { "user_id": validId, "user_email": validEmail, shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL };
     res.render("urls_show", templateVars);
   } else {
@@ -193,8 +207,9 @@ app.get("/urls/edit/:shortURL", (req, res) => { // GET >>>>>>>>>>>>>>>>>
   const index = req.params.shortURL;
   console.log("### Shows EDIT URL ####");
   console.log(index, urlDatabase[req.params.shortURL]);
-  const validId = req.cookies["user_id"] ? req.cookies["user_id"] : false;
-  const validEmail = req.cookies["user_id"] ? usersDatabase[validId].email : false;
+  const validId = req.session.userID ? req.session.userID : false;
+  const validEmail = req.session.userID ? usersDatabase[validId].email : false;
+  console.log("validId", validId); // *** update
   if (validId === urlDatabase[req.params.shortURL].userID) {
     const templateVars = { "user_id": validId, "user_email": validEmail, shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL};
     res.render("urls_edit", templateVars);
@@ -206,7 +221,9 @@ app.get("/urls/edit/:shortURL", (req, res) => { // GET >>>>>>>>>>>>>>>>>
 app.post("/urls/edit/:shortURL", (req, res) => { // POST <<<<<<<<<<<<<<<< Edit
   console.log("### Edit Post ####");
   console.log(req.params.shortURL, req.body, req.body.shortURL);
-  const validId = req.cookies["user_id"];
+  const validId = req.session.userID ? req.session.userID : false;
+  const validEmail = req.session.userID ? usersDatabase[validId].email : false;
+  console.log("validId", validId); // *** update
   if (validId === urlDatabase[req.params.shortURL].userID) {
     urlDatabase[req.params.shortURL].longURL = req.body.longURL;
     res.redirect("/urls");
@@ -222,8 +239,9 @@ app.get('/first', (req, res) => {
   console.log("### log in first page ####");
   // status denied
   res.status(401);
-  const validId = req.cookies["user_id"] ? req.cookies["user_id"] : false;
-  const validEmail = req.cookies["user_id"] ? usersDatabase[validId].email : false;
+  const validId = req.session.userID ? req.session.userID : false;
+  const validEmail = req.session.userID ? usersDatabase[validId].email : false;
+  console.log("validId", validId); // *** update
   const templateVars = { "user_id": validId, "user_email": validEmail };
   res.render("first", templateVars);
   res.end();
@@ -233,8 +251,9 @@ app.get('/first', (req, res) => {
 app.get('*', (req, res) => {
   console.log("### 404 page ####");
   res.status(404);
-  const validId = req.cookies["user_id"] ? req.cookies["user_id"] : false;
-  const validEmail = req.cookies["user_id"] ? usersDatabase[validId].email : false;
+  const validId = req.session.userID ? req.session.userID : false;
+  const validEmail = req.session.userID ? usersDatabase[validId].email : false;
+  console.log("validId", validId); // *** update
   const templateVars = { "user_id": validId, "user_email": validEmail };
   res.render("urls_404", templateVars);
   res.end();
