@@ -5,6 +5,7 @@ const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
 const generateRandomString = require("./random"); // @willianchu random.js
 const { object2disk, disk2object } = require("./object2disk"); // @willianchu object2disk.js
+const bcrypt = require('bcryptjs');
 
 // middleware
 app.use(bodyParser.urlencoded({extended: true}));
@@ -25,17 +26,23 @@ app.get("/login", (req, res) => {
   const validId = req.cookies["user_id"] ? req.cookies["user_id"] : false;
   const validEmail = req.cookies["user_id"] ? usersDatabase[validId].email : false;
   const templateVars = { "user_id": validId, "user_email": validEmail };
+  console.log("templateVars delivered", templateVars);
   res.render("login", templateVars);
 });
 
 
 app.post("/login", (req, res) => { // <<<<<<<<<<<<<<< POST login
-  console.log("login post", req.body);
+  console.log("Entered in POST /login (req.body)=", req.body);
+  console.log("POST req.body.password", req.body.password);
   const loggedUserEmail = req.body.email;
   const loggedUserPassword = req.body.password; // get the password from the form
-  console.log("loggedUserEmail", loggedUserEmail, "loggedUserPassword", loggedUserPassword);
+  console.log("loggedUserEmail >>>", loggedUserEmail, "loggedUserPassword", loggedUserPassword);
+  let encryptIsTrue = false;
   for (let user in usersDatabase) { // loop through the users database
-    if (usersDatabase[user].email === loggedUserEmail && usersDatabase[user].password === loggedUserPassword) { // if the email and password match
+    encryptIsTrue = bcrypt.compareSync(loggedUserPassword, usersDatabase[user].password); // compare the password from the form with the password from the database
+    console.log("encryptIsTrue", encryptIsTrue);
+    console.log("usersDatabase[user].email", usersDatabase[user].email);
+    if (usersDatabase[user].email === loggedUserEmail && encryptIsTrue) { // if the email and password match
       res.cookie("user_id", usersDatabase[user].id); // set cookie
       res.redirect("/urls"); // redirect to the urls page
       res.end();
@@ -60,7 +67,9 @@ app.get("/urls", (req, res) => {
   console.log("### load index page ###");
   console.log("req.cookies", req.cookies);
   const validId = req.cookies["user_id"] ? req.cookies["user_id"] : false;
+  //look for a valid email using the cookie
   const validEmail = req.cookies["user_id"] ? usersDatabase[validId].email : false;
+  console.log("validId", validId); // *** update
   if (validId === false) { // if the user is not logged in
     res.redirect("/first");
     res.end();
@@ -106,7 +115,8 @@ app.post("/register", (req, res) => { // <<<<<<<<<<<< POST form has a body
   const newUserId = generateRandomString(6);
   console.log("Register valid");
   console.log(newUserId, newEmail, newPassword);
-  usersDatabase[newUserId] = { "id": newUserId, "email": newEmail, "password": newPassword };
+  const encryptedPassword = bcrypt.hashSync(newPassword, 10);
+  usersDatabase[newUserId] = { "id": newUserId, "email": newEmail, "password": encryptedPassword };
   object2disk(usersDatabase, "usersDatabase.json");
   console.log("user",usersDatabase);
   res.redirect("/urls");
