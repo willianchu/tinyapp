@@ -61,7 +61,20 @@ app.get("/urls", (req, res) => {
   console.log("req.cookies", req.cookies);
   const validId = req.cookies["user_id"] ? req.cookies["user_id"] : false;
   const validEmail = req.cookies["user_id"] ? usersDatabase[validId].email : false;
-  const templateVars = { "user_id": validId, "user_email": validEmail, urls: urlDatabase };
+  if (validId === false) { // if the user is not logged in
+    res.redirect("/first");
+    res.end();
+  }
+  // sends only the urls that the user owns
+  const userUrls = {};
+  for (let url in urlDatabase) {
+    console.log(urlDatabase[url].userID,validId);
+    if (urlDatabase[url].userID === validId) {
+      userUrls[url] = urlDatabase[url];
+    }
+  }
+  console.log("userUrls", userUrls);
+  const templateVars = { "user_id": validId, "user_email": validEmail, "urls": userUrls };
   res.render("urls_index", templateVars);
 });
 
@@ -124,9 +137,14 @@ app.post("/urls", (req, res) => { // <<<<<<<<<<<<<<<< POST form
 app.post("/urls/*/delete", (req, res) => { // post <<<<<<<<<<<<<<<< delete
   console.log(">>>> post Delete <<<<<");
   console.log(req.body);  // Log the POST request body to the console
-  delete urlDatabase[req.params[0]]; // delete the URL from the database
-  object2disk(urlDatabase, "urlDatabase.json"); // save the database to disk
-  res.redirect("/urls");
+  const validId = req.cookies["user_id"];
+  if (validId === urlDatabase[req.params[0]].userID) {
+    delete urlDatabase[req.params[0]]; // delete the URL from the database
+    object2disk(urlDatabase, "urlDatabase.json"); // save the database to disk
+    res.redirect("/urls");
+  } else {
+    res.status(403).send("<h1>You are not authorized to delete this URL</h1>");
+  }
 });
 
 
@@ -167,17 +185,39 @@ app.get("/urls/edit/:shortURL", (req, res) => { // GET >>>>>>>>>>>>>>>>>
   console.log(index, urlDatabase[req.params.shortURL]);
   const validId = req.cookies["user_id"] ? req.cookies["user_id"] : false;
   const validEmail = req.cookies["user_id"] ? usersDatabase[validId].email : false;
-  const templateVars = { "user_id": validId, "user_email": validEmail, shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL};
-  res.render("urls_edit", templateVars);
+  if (validId === urlDatabase[req.params.shortURL].userID) {
+    const templateVars = { "user_id": validId, "user_email": validEmail, shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL};
+    res.render("urls_edit", templateVars);
+  } else {
+    res.redirect("/urls");
+  };
 });
 
 app.post("/urls/edit/:shortURL", (req, res) => { // POST <<<<<<<<<<<<<<<< Edit
   console.log("### Edit Post ####");
   console.log(req.params.shortURL, req.body, req.body.shortURL);
-  urlDatabase[req.params.shortURL].longURL = req.body.longURL;
-  res.redirect("/urls");
+  const validId = req.cookies["user_id"];
+  if (validId === urlDatabase[req.params.shortURL].userID) {
+    urlDatabase[req.params.shortURL].longURL = req.body.longURL;
+    res.redirect("/urls");
+    res.end();
+  } else {
+    res.status(403).send("<h1>You are not authorized to edit this URL</h1>");
+  }
 });
 
+
+// ##### page log in First #####
+app.get('/first', (req, res) => {
+  console.log("### log in first page ####");
+  // status denied
+  res.status(401);
+  const validId = req.cookies["user_id"] ? req.cookies["user_id"] : false;
+  const validEmail = req.cookies["user_id"] ? usersDatabase[validId].email : false;
+  const templateVars = { "user_id": validId, "user_email": validEmail };
+  res.render("first", templateVars);
+  res.end();
+});
 
 // ##### page 404 #####
 app.get('*', (req, res) => {
