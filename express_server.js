@@ -13,34 +13,36 @@ app.set("view engine", "ejs"); // set ejs as the view engine - must be installed
 
 app.use(cookieParser()); // set cookieParser as the view engine
 
+// ##### data base #####
+// ##### disk retrieve #####
 const urlDatabase = disk2object("urlDatabase.json"); // retrieve the object from disk  and convert it to a javascript object
 
-/* cookie example
-app.get('/', function (req, res) {
-  // Cookies that have not been signed
-  console.log('Cookies: ', req.cookies)
+// ##### users database #####
+const usersDatabase = {
+  "userRandomID": {
+    id: "qwerty",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur"
+  },
+  "user2RandomID": {
+    id: "asdfg",
+    email: "user2@example.com",
+    password: "dishwasher-funk"
+  }
+};
 
-  // Cookies that have been signed
-  console.log('Signed Cookies: ', req.signedCookies)
-})
-*/
+
 // ##### Login/ Cookie route #####
+// ###############################
 app.post("/login", (req, res) => {
   const loggedUserName = req.body.userName;
   // parse body of request
   console.log("set a cookie", req.body);
-  res.cookie(loggedUserName); // set cookie
-  // const user = req.body.username;
-  // const password = req.body.password;
-  // const userDatabase = disk2object("users.json");
-  // const userFound = userDatabase[user];
-  // if (userFound && userFound.password === password) {
-  //   res.cookie("username", user, {maxAge: 3600000});
+  res.cookie("user", loggedUserName); // set cookie
+
   const templateVars = { "loggedUserName": loggedUserName, urls: urlDatabase };
   res.render("urls_index", templateVars);
-  // } else {
-  //   res.status(403).send("<h1>403 Forbidden</h1>"); // create a 403 Forbidden in 404 page
-  // }
+
 });
 
 
@@ -53,6 +55,33 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
+// ##### Register #####
+// #########################
+app.get("/register", (req, res) => { // GET form doesn't have a body
+  console.log("### register ###");
+  res.render("register");
+}); // >>>>>>>>>> show
+
+app.post("/register", (req, res) => { // POST form has a body
+  const newEmail = req.body.email;
+  const newPassword = req.body.password;
+  
+  // check if email is already in use
+  for (let index in usersDatabase) {
+    if (usersDatabase[index].email === newEmail) {
+      console.log("email already in use");
+      res.status(400).send("email already in use");
+      return;
+    }
+  }
+  console.log("Register valid");
+  const newUserId = generateRandomString(6);
+  usersDatabase[newUserId] = { id: newUserId, email: newEmail, password: newPassword };
+  res.cookie("user", newUserId);
+  console.log("user",usersDatabase);
+  res.redirect("/urls");
+});
+
 // ##### Write/ Create #####
 // #########################
 app.get("/urls/new", (req, res) => { // GET form doesn't have a body
@@ -61,7 +90,7 @@ app.get("/urls/new", (req, res) => { // GET form doesn't have a body
 }); // >>>>>>>>>> show
 
 app.post("/urls", (req, res) => { // <<<<<<<<<<<<<<<< write
-  const uniqueKey = generateRandomString(6, urlDatabase);
+  const uniqueKey = generateRandomString(6);
   console.log(">>> post /urls adding a new tiny <<<");
   console.log(uniqueKey, req.body);  // Log the POST request body to the console
   urlDatabase[uniqueKey] = req.body.longURL; // add the new URL to the database
@@ -125,8 +154,8 @@ app.post("/logout", (req, res) => {
   console.log("### Logout req ####");
   console.log(req.body);
   const toDelete = req.cookies["username"];
-  res.clearCookie("username");
-  // res.redirect("/urls");
+  res.clearCookie(toDelete);
+  res.redirect("/urls");
 });
 
 
