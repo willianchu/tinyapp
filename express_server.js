@@ -42,6 +42,7 @@ app.post("/login", (req, res) => { // <<<<<<<<<<<<<<< POST login
     }
   }
   res.status(403).send("<h1>email/ password don't mach!</h1>"); // if the email and password don't match
+  res.end();
 });
 
 
@@ -110,9 +111,10 @@ app.get("/urls/new", (req, res) => { // >>>>>>>>>> GET page
 
 app.post("/urls", (req, res) => { // <<<<<<<<<<<<<<<< POST form
   const uniqueKey = generateRandomString(6);
+  const validId = req.cookies["user_id"];
   console.log(">>> post /urls adding a new tiny <<<");
   console.log(uniqueKey, req.body);  // Log the POST request body to the console
-  urlDatabase[uniqueKey] = req.body.longURL; // add the new URL to the database
+  urlDatabase[uniqueKey] = { longURL: req.body.longURL, userID: validId}; // add the new URL to the database
   object2disk(urlDatabase, "urlDatabase.json"); // save the database to disk
   res.redirect("/urls");  // Redirect to the index page
 });
@@ -132,21 +134,29 @@ app.post("/urls/*/delete", (req, res) => { // post <<<<<<<<<<<<<<<< delete
 app.get("/u/:shortURL", (req, res) => {
   console.log("Go to the long URL >>>>>>>> external");
   console.log(req.params);
-  const longURL = urlDatabase[req.params.shortURL]; // requesting the longURL from the database using the shortURL in the params of the request
-  
-  console.log(longURL);
-  res.redirect(longURL); // go outside
+  const longURL = urlDatabase[req.params.shortURL].longURL; // requesting the longURL from the database using the shortURL in the params of the request
+  // check if the longURL is a valid URL
+  if (longURL) {
+    console.log(longURL);
+    res.redirect(longURL); // go outside
+  } else {
+    res.redirect("/notfound");
+  }
 });
 
 
 // ##### specific URL #####
 app.get("/urls/:shortURL", (req, res) => {
   console.log("### Shows Specific URL ####");
-  console.log(urlDatabase[req.params.shortURL]);
-  const validId = req.cookies["user_id"] ? req.cookies["user_id"] : false;
-  const validEmail = req.cookies["user_id"] ? usersDatabase[validId].email : false;
-  const templateVars = { "user_id": validId, "user_email": validEmail, shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
-  res.render("urls_show", templateVars);
+  console.log("parameters",req.params.shortURL);
+  if (urlDatabase[req.params.shortURL]) {
+    const validId = req.cookies["user_id"] ? req.cookies["user_id"] : false;
+    const validEmail = req.cookies["user_id"] ? usersDatabase[validId].email : false;
+    const templateVars = { "user_id": validId, "user_email": validEmail, shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL };
+    res.render("urls_show", templateVars);
+  } else {
+    res.redirect("/notfound");
+  }
 });
 
 
@@ -157,14 +167,14 @@ app.get("/urls/edit/:shortURL", (req, res) => { // GET >>>>>>>>>>>>>>>>>
   console.log(index, urlDatabase[req.params.shortURL]);
   const validId = req.cookies["user_id"] ? req.cookies["user_id"] : false;
   const validEmail = req.cookies["user_id"] ? usersDatabase[validId].email : false;
-  const templateVars = { "user_id": validId, "user_email": validEmail, shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  const templateVars = { "user_id": validId, "user_email": validEmail, shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL};
   res.render("urls_edit", templateVars);
 });
 
 app.post("/urls/edit/:shortURL", (req, res) => { // POST <<<<<<<<<<<<<<<< Edit
   console.log("### Edit Post ####");
   console.log(req.params.shortURL, req.body, req.body.shortURL);
-  urlDatabase[req.params.shortURL] = req.body.longURL;
+  urlDatabase[req.params.shortURL].longURL = req.body.longURL;
   res.redirect("/urls");
 });
 

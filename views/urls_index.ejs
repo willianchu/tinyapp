@@ -14,11 +14,12 @@
   </header>
   <main style="margin: 1em;">
     <h3>My URLs</h3>
-    <table class="table">
+    <table style="width:100%" class="table">
       <thead>
         <tr>
           <th scope="col">Short URL</th>
           <th scope="col">Long URL</th>
+          <th scope="col">User</th>
           <th scope="col">Edit</th>
           <th scope="col">Delete</th>
         </tr>
@@ -27,7 +28,8 @@
         <% for(let url in urls) { %>
           <tr>
             <td><a href="/urls/<%= url %>"><%= url %></a></td>
-            <td><%= urls[url] %></td>
+            <td><%= urls[url].longURL %></td>
+            <td><%= urls[url].userID %></td>
             <td>
               <form method="GET" action="/urls/edit/<%= url %>">
                 <input type="hidden" name="EditKey" value=<% url %>>
