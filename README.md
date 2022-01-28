@@ -51,9 +51,22 @@ TinyApp is open source itself too! with a [public repository][willianchu]
 ## Getting Started
 
 Tinyapp requires Node.js v12 to run
-
+- After fork and clone the repository
 - Install all dependencies (using the `npm install` command).
 - Run the development web server using the `node express_server.js` command.
+
+alternatively
+```sh
+npm start
+```
+
+-After the server is running you at your browser:
+```sh
+http://localhost:8080/
+```
+
+> Note: The implementation have to files with urlDatabase and usersDatabase running in syncronous mode.
+> The app was tested in a Windows10 with a native kernal WSL2.
 
 ## License
 
